@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
+import 'package:get/get_navigation/src/snackbar/snackbar.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:get/get.dart';
 
 class MyProfilePage extends StatefulWidget {
-  const MyProfilePage({super.key});
+  final VoidCallback? onProfileUpdated;
+
+  const MyProfilePage({super.key, this.onProfileUpdated});
 
   @override
   State<MyProfilePage> createState() => _MyProfilePageState();
@@ -58,18 +62,21 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
   Future<void> saveUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-
     String? storedUser = prefs.getString('user');
 
     if (storedUser == null) {
       Get.snackbar(
         "Error",
-        "No user data found to update",
+        "No user data found",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade100,
+        colorText: Colors.black,
+        margin: const EdgeInsets.all(12),
+        borderRadius: 8,
       );
       return;
     }
+
     Map<String, dynamic> oldData = jsonDecode(storedUser);
 
     Map<String, dynamic> updatedData = {
@@ -85,13 +92,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
     await prefs.setString('user', jsonEncode(updatedData));
 
+    widget.onProfileUpdated?.call();
+
     Get.snackbar(
-      "Success",
+      "Success 🎉",
       "Profile Updated Successfully!",
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: Colors.green.shade100,
+      colorText: Colors.black,
+      margin: const EdgeInsets.all(12),
+      borderRadius: 8,
+      duration: const Duration(seconds: 2),
     );
   }
+
 
   Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
@@ -106,23 +120,17 @@ class _MyProfilePageState extends State<MyProfilePage> {
   }
 
   void showImagePickerOptions() {
-    Get.bottomSheet(
-      Container(
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
         child: Wrap(
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt),
               title: const Text('Take Photo'),
               onTap: () {
-                Get.back();
+                Navigator.pop(context);
                 pickImage(ImageSource.camera);
               },
             ),
@@ -130,7 +138,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
               leading: const Icon(Icons.photo_library),
               title: const Text('Choose from Gallery'),
               onTap: () {
-                Get.back();
+                Navigator.pop(context);
                 pickImage(ImageSource.gallery);
               },
             ),
@@ -141,10 +149,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
   }
 
   Widget buildTextField(
-    String label,
-    TextEditingController controller, {
-    int maxLines = 1,
-  }) {
+      String label,
+      TextEditingController controller, {
+        int maxLines = 1,
+      }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextField(
@@ -152,13 +160,21 @@ class _MyProfilePageState extends State<MyProfilePage> {
         enabled: isEditing,
         maxLines: maxLines,
         style: TextStyle(
-          color: Colors.black87,
           fontSize: 16,
           fontWeight: FontWeight.bold,
+          color: isEditing ? Colors.black87 : Colors.black,
         ),
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.grey,
+          ),
+          filled: !isEditing,
+          fillColor: Colors.grey.shade100,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           suffixIcon: isEditing
               ? const Icon(Icons.edit, color: Colors.purpleAccent)
               : null,
@@ -169,90 +185,79 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        backgroundColor: Colors.purpleAccent,
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                CircleAvatar(
-                  radius: 60,
-                  backgroundImage: imageFile != null
-                      ? FileImage(imageFile!)
-                      : NetworkImage(defaultImage) as ImageProvider,
-                ),
-                if (isEditing)
-                  GestureDetector(
-                    onTap: showImagePickerOptions,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+
+          // PROFILE IMAGE
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              CircleAvatar(
+                radius: 60,
+                backgroundImage: imageFile != null
+                    ? FileImage(imageFile!)
+                    : NetworkImage(defaultImage) as ImageProvider,
+              ),
+              if (isEditing)
+                GestureDetector(
+                  onTap: showImagePickerOptions,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 20,
                     ),
                   ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            buildTextField('Name', nameController),
-            buildTextField('Phone', phoneController),
-            buildTextField('Email', emailController),
-            buildTextField('Gender', genderController),
-            buildTextField('Age', ageController),
-            buildTextField('Description', descriptionController, maxLines: 4),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              height: 45,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purpleAccent,
                 ),
-                onPressed: () async {
-                  if (isEditing) {
-                    await saveUserData();
-                  }
-                  setState(() {
-                    isEditing = !isEditing;
-                  });
-                },
-                child: Text(
-                  isEditing ? 'Save Changes' : 'Edit Profile',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+            ],
+          ),
+
+          const SizedBox(height: 25),
+
+          buildTextField('Name', nameController),
+          buildTextField('Phone', phoneController),
+          buildTextField('Email', emailController),
+          buildTextField('Gender', genderController),
+          buildTextField('Age', ageController),
+          buildTextField('Description', descriptionController, maxLines: 4),
+
+          const SizedBox(height: 25),
+
+          SizedBox(
+            width: double.infinity,
+            height: 45,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purpleAccent,
+              ),
+              onPressed: () async {
+                if (isEditing) {
+                  await saveUserData();
+                }
+
+                setState(() {
+                  isEditing = !isEditing;
+                });
+              },
+              child: Text(
+                isEditing ? 'Save Changes' : 'Edit Profile',
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 class MyAboutPage extends StatelessWidget {
   const MyAboutPage({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Container(

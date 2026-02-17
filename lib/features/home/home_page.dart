@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_login/features/home/settings_page.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../profile/profile_page.dart';
 import '../about/about_page.dart';
@@ -17,9 +19,16 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
+  bool _isFabOpen = false;
 
   String userName = "";
   String? imagePath;
+
+  // 🔒 FIXED CONTACT DETAILS
+  final String phoneNumber = "9552465892";
+  final String whatsappNumber = "919552465892"; // 91 + number
+  final String emailAddress = "aaa@gmail.com";
+  final String message = "Hello, I need support.";
 
   final List<String> _titles = ["Home", "Settings", "About", "Profile"];
 
@@ -35,10 +44,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (storedUser != null) {
       Map<String, dynamic> userData = jsonDecode(storedUser);
-      String fullName = userData['name'] ?? "";
 
       setState(() {
-        userName = fullName.split(" ").first;
+        userName = (userData['name'] ?? "").split(" ").first;
         imagePath = userData['imagePath'];
       });
     }
@@ -50,9 +58,75 @@ class _MyHomePageState extends State<MyHomePage> {
     Get.offAllNamed('/login');
   }
 
+  void showLogoutDialog() {
+    Get.defaultDialog(
+      title: "Confirm Logout",
+      middleText: "Are you sure you want to logout?",
+      textCancel: "No",
+      textConfirm: "Yes",
+      confirmTextColor: Colors.white,
+      buttonColor: Colors.red,
+      radius: 15,
+      onConfirm: () async {
+        await logoutUser();
+      },
+    );
+  }
+
+  // ================= CONTACT FUNCTIONS =================
+
+  Future<void> openDialer() async {
+    final Uri uri = Uri(scheme: 'tel', path: phoneNumber);
+    await launchUrl(uri);
+  }
+
+  Future<void> openWhatsApp() async {
+    final Uri uri =
+    Uri.parse("https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(message)}");
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> openEmail() async {
+    final Uri uri = Uri(
+      scheme: 'mailto',
+      path: emailAddress,
+      query: 'subject=Support&body=$message',
+    );
+    await launchUrl(uri);
+  }
+
+  Future<void> openSMS() async {
+    final Uri uri = Uri(
+      scheme: 'sms',
+      path: phoneNumber,
+      query: 'body=$message',
+    );
+    await launchUrl(uri);
+  }
+
+  Widget _miniFab({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return FloatingActionButton(
+      heroTag: icon.toString(),
+      mini: true,
+      backgroundColor: color,
+      onPressed: () {
+        onTap();
+        setState(() {
+          _isFabOpen = false;
+        });
+      },
+      child: Icon(icon),
+    );
+  }
+
   void _changeTab(int index) {
     setState(() {
       _currentIndex = index;
+      _isFabOpen = false;
     });
     Get.back();
   }
@@ -60,9 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _currentIndex == 3
-          ? null
-          : AppBar(
+      appBar: AppBar(
         centerTitle: true,
         backgroundColor: Colors.purpleAccent,
         title: Text(
@@ -76,15 +148,8 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: _currentIndex == 0
             ? [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await logoutUser();
-              Get.snackbar(
-                "Success",
-                "Logged out successfully",
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
+            icon: const Icon(Icons.logout_outlined),
+            onPressed: showLogoutDialog,
           ),
         ]
             : null,
@@ -95,14 +160,39 @@ class _MyHomePageState extends State<MyHomePage> {
         index: _currentIndex,
         children: [
           Center(
-            child: Text(
-              "Welcome 👋 $userName!",
-              style: const TextStyle(fontSize: 24),
+            child: Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(30),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.person,
+                        size: 60, color: Colors.purpleAccent),
+                    const SizedBox(height: 15),
+                    Text(
+                      "Welcome 👋 $userName",
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Have a great day!",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           const MySettingsPage(),
           const MyAboutPage(),
-          const MyProfilePage(),
+          MyProfilePage(onProfileUpdated: loadUserData),
         ],
       ),
 
@@ -143,9 +233,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          userName.isNotEmpty
-                              ? "Welcome 👋 $userName"
-                              : "Welcome 👋 User",
+                          "Welcome 👋 $userName",
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -155,7 +243,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       ],
                     ),
                   ),
-
                   ListTile(
                     leading: const Icon(Icons.home),
                     title: const Text("Home"),
@@ -180,53 +267,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ListTile(
                     leading: const Icon(Icons.logout),
                     title: const Text("Logout"),
-                    onTap: () async {
-                      await logoutUser();
-                      Get.snackbar(
-                        "Success",
-                        "Logged out successfully",
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // ================= FOOTER =================
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  vertical: 18, horizontal: 63),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                border: const Border(
-                  top: BorderSide(color: Colors.grey),
-                ),
-              ),
-              child: const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.flutter_dash,
-                      size: 36, color: Colors.blue),
-                  SizedBox(height: 6),
-                  Text(
-                    "Flutter Login App",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    "Version 1.0.0",
-                    style: TextStyle(
-                        fontSize: 13, color: Colors.grey),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    "© 2026 Developed by Prosenjit",
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey),
+                    onTap: showLogoutDialog,
                   ),
                 ],
               ),
@@ -234,6 +275,70 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
+
+      // ================= TOGGLE FAB =================
+      floatingActionButton: _currentIndex == 0
+          ? SizedBox(
+        width: 200,
+        height: 280,
+        child: Stack(
+          alignment: Alignment.bottomRight,
+          children: [
+            if (_isFabOpen)
+              Positioned(
+                bottom: 215,
+                right: 0,
+                child: _miniFab(
+                  icon: FontAwesomeIcons.whatsapp, // WhatsApp style
+                  color: Colors.green,
+                  onTap: openWhatsApp,
+                ),
+              ),
+            if (_isFabOpen)
+              Positioned(
+                bottom: 165,
+                right: 0,
+                child: _miniFab(
+                  icon: Icons.message,
+                  color: Colors.orange,
+                  onTap: openSMS,
+                ),
+              ),
+            if (_isFabOpen)
+              Positioned(
+                bottom: 115,
+                right: 0,
+                child: _miniFab(
+                  icon: Icons.call,
+                  color: Colors.blue,
+                  onTap: openDialer,
+                ),
+              ),
+            if (_isFabOpen)
+              Positioned(
+                bottom: 65,
+                right: 0,
+                child: _miniFab(
+                  icon: Icons.email_sharp,
+                  color: Colors.red,
+                  onTap: openEmail,
+                ),
+              ),
+            FloatingActionButton(
+              backgroundColor: Colors.purpleAccent,
+              child: Icon(
+                _isFabOpen ? Icons.close : Icons.support_agent,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isFabOpen = !_isFabOpen;
+                });
+              },
+            ),
+          ],
+        ),
+      )
+          : null,
 
       // ================= BOTTOM NAV =================
       bottomNavigationBar: BottomNavigationBar(
@@ -243,21 +348,17 @@ class _MyHomePageState extends State<MyHomePage> {
         onTap: (index) {
           setState(() {
             _currentIndex = index;
+            _isFabOpen = false;
           });
         },
         items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(
               icon: Icon(Icons.settings), label: "Settings"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.info), label: "About"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person), label: "Profile"),
+          BottomNavigationBarItem(icon: Icon(Icons.info), label: "About"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
     );
   }
 }
-
-
