@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_login/features/profile/profile_page.dart';
-import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter_login/features/home/settings_page.dart';
+import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../profile/profile_page.dart';
 import '../about/about_page.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -33,7 +35,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (storedUser != null) {
       Map<String, dynamic> userData = jsonDecode(storedUser);
-
       String fullName = userData['name'] ?? "";
 
       setState(() {
@@ -53,143 +54,188 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _currentIndex = index;
     });
-    Get.back(); // close drawer
+    Get.back();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _currentIndex == 3 ? null : AppBar(
+      appBar: _currentIndex == 3
+          ? null
+          : AppBar(
         centerTitle: true,
         backgroundColor: Colors.purpleAccent,
         title: Text(
           _titles[_currentIndex],
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
-            fontSize: 25,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: _currentIndex == 0
             ? [
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: () async {
-                    await logoutUser();
-                    Get.snackbar(
-                      "Success",
-                      "Logged out successfully",
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                  },
-                ),
-              ]
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await logoutUser();
+              Get.snackbar(
+                "Success",
+                "Logged out successfully",
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            },
+          ),
+        ]
             : null,
       ),
 
-      // ---------------- BODY (IndexedStack for state retain) ----------------
+      // ================= BODY =================
       body: IndexedStack(
         index: _currentIndex,
         children: [
           Center(
             child: Text(
-              'Welcome 👋 $userName!',
+              "Welcome 👋 $userName!",
               style: const TextStyle(fontSize: 24),
             ),
           ),
-          const Center(
-            child: Text('Settings Page', style: TextStyle(fontSize: 24)),
-          ),
+          const MySettingsPage(),
           const MyAboutPage(),
           const MyProfilePage(),
         ],
       ),
 
-      // ---------------- DRAWER ----------------
+      // ================= DRAWER =================
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.purpleAccent, Colors.deepPurpleAccent],
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
                 children: [
-                  CircleAvatar(
-                    radius: 42,
-                    backgroundColor: Colors.white,
-                    backgroundImage:
-                        (imagePath != null && imagePath!.isNotEmpty)
-                        ? FileImage(File(imagePath!))
-                        : null,
-                    child: (imagePath == null || imagePath!.isEmpty)
-                        ? const Icon(
+                  DrawerHeader(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.purpleAccent,
+                          Colors.deepPurpleAccent
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Colors.white,
+                          backgroundImage:
+                          (imagePath != null && imagePath!.isNotEmpty)
+                              ? FileImage(File(imagePath!))
+                              : null,
+                          child: (imagePath == null || imagePath!.isEmpty)
+                              ? const Icon(
                             Icons.person,
-                            size: 44,
+                            size: 40,
                             color: Colors.purpleAccent,
                           )
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    userName.isNotEmpty
-                        ? "Welcome 👋 $userName!"
-                        : "Welcome 👋 User!",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                              : null,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          userName.isNotEmpty
+                              ? "Welcome 👋 $userName"
+                              : "Welcome 👋 User",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+
+                  ListTile(
+                    leading: const Icon(Icons.home),
+                    title: const Text("Home"),
+                    onTap: () => _changeTab(0),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.settings),
+                    title: const Text("Settings"),
+                    onTap: () => _changeTab(1),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.info),
+                    title: const Text("About"),
+                    onTap: () => _changeTab(2),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.person),
+                    title: const Text("Profile"),
+                    onTap: () => _changeTab(3),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.logout),
+                    title: const Text("Logout"),
+                    onTap: () async {
+                      await logoutUser();
+                      Get.snackbar(
+                        "Success",
+                        "Logged out successfully",
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    },
                   ),
                 ],
               ),
             ),
 
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Home'),
-              onTap: () => _changeTab(0),
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () => _changeTab(1),
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.info),
-              title: const Text('About'),
-              onTap: () => _changeTab(2),
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profile'),
-              onTap: () => _changeTab(3),
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () async {
-                await logoutUser();
-                Get.snackbar(
-                  "Success",
-                  "Logged out successfully",
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-              },
+            // ================= FOOTER =================
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  vertical: 18, horizontal: 63),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                border: const Border(
+                  top: BorderSide(color: Colors.grey),
+                ),
+              ),
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.flutter_dash,
+                      size: 36, color: Colors.blue),
+                  SizedBox(height: 6),
+                  Text(
+                    "Flutter Login App",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    "Version 1.0.0",
+                    style: TextStyle(
+                        fontSize: 13, color: Colors.grey),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    "© 2026 Developed by Prosenjit",
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
 
-      // ---------------- BOTTOM NAV ----------------
+      // ================= BOTTOM NAV =================
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: Colors.pinkAccent,
@@ -200,15 +246,18 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: "Settings",
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: "About"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+              icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.settings), label: "Settings"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.info), label: "About"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
     );
   }
 }
+
+
