@@ -32,7 +32,7 @@ class _MyRegisterState extends State<MyRegister> {
       "password": passwordController.text.trim(),
       "phone": phoneController.text.trim(),
       "age": ageController.text.trim(),
-      "gender": selectedGender ?? "",
+      "gender": selectedGender,
     };
 
     String jsonString = jsonEncode(userData);

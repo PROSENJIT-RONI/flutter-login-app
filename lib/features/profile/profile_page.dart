@@ -17,14 +17,43 @@ class MyProfilePage extends StatefulWidget {
 }
 
 class _MyProfilePageState extends State<MyProfilePage> {
+  double calculateCompletion() {
+    int totalFields = 7;
+    int completedFields = 0;
+
+    if (nameController.text.trim().isNotEmpty) {
+      completedFields++;
+    }
+    if (phoneController.text.trim().isNotEmpty) {
+      completedFields++;
+    }
+    if (emailController.text.trim().isNotEmpty) {
+      completedFields++;
+    }
+    if (ageController.text.trim().isNotEmpty) {
+      completedFields++;
+    }
+    if (descriptionController.text.trim().isNotEmpty) {
+      completedFields++;
+    }
+    if (selectedGender.isNotEmpty) {
+      completedFields++;
+    }
+
+    if (imagePath != null && imagePath!.isNotEmpty) completedFields++;
+
+    return completedFields / totalFields;
+  }
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController genderController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   bool isEditing = false;
+
+  String selectedGender = "Male";
 
   File? imageFile;
   String? imagePath;
@@ -47,9 +76,14 @@ class _MyProfilePageState extends State<MyProfilePage> {
         nameController.text = userData['name'] ?? '';
         phoneController.text = userData['phone'] ?? '';
         emailController.text = userData['email'] ?? '';
-        genderController.text = userData['gender'] ?? '';
         ageController.text = userData['age'] ?? '';
         descriptionController.text = userData['description'] ?? '';
+
+        selectedGender =
+            (userData['gender'] != null &&
+                userData['gender'].toString().isNotEmpty)
+            ? userData['gender']
+            : "Male";
 
         imagePath = userData['imagePath'];
 
@@ -83,7 +117,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
       'name': nameController.text.trim(),
       'phone': phoneController.text.trim(),
       'email': emailController.text.trim(),
-      'gender': genderController.text.trim(),
+      'gender': selectedGender,
       'age': ageController.text.trim(),
       'description': descriptionController.text.trim(),
       'imagePath': imagePath ?? '',
@@ -105,7 +139,6 @@ class _MyProfilePageState extends State<MyProfilePage> {
       duration: const Duration(seconds: 2),
     );
   }
-
 
   Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
@@ -149,15 +182,18 @@ class _MyProfilePageState extends State<MyProfilePage> {
   }
 
   Widget buildTextField(
-      String label,
-      TextEditingController controller, {
-        int maxLines = 1,
-      }) {
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+    bool alwaysDisabled = false,
+  }) {
+    final bool isFieldEnabled = alwaysDisabled ? false : isEditing;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextField(
         controller: controller,
-        enabled: isEditing,
+        enabled: alwaysDisabled ? false : isEditing,
         maxLines: maxLines,
         style: TextStyle(
           fontSize: 16,
@@ -170,16 +206,74 @@ class _MyProfilePageState extends State<MyProfilePage> {
             fontWeight: FontWeight.w600,
             color: Colors.grey,
           ),
-          filled: !isEditing,
+          filled: !isFieldEnabled,
           fillColor: Colors.grey.shade100,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          suffixIcon: isEditing
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          suffixIcon: alwaysDisabled
+              ? const Icon(Icons.lock, color: Colors.grey)
+              : (!alwaysDisabled && isEditing)
               ? const Icon(Icons.edit, color: Colors.purpleAccent)
               : null,
         ),
       ),
+    );
+  }
+
+  Widget buildGenderSection() {
+    if (!isEditing) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: TextField(
+          enabled: false,
+          controller: TextEditingController(text: selectedGender),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+          decoration: InputDecoration(
+            labelText: "Gender",
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        const Text(
+          'Select Gender',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        RadioGroup<String>(
+          groupValue: selectedGender,
+          onChanged: (String? value) {
+            setState(() {
+              selectedGender = value!;
+            });
+          },
+          child: Row(
+            children: const [
+              Radio<String>(value: "Male"),
+              Text("Male"),
+              SizedBox(width: 10),
+              Radio<String>(value: "Female"),
+              Text("Female"),
+              SizedBox(width: 10),
+              Radio<String>(value: "Other"),
+              Text("Other"),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -189,18 +283,19 @@ class _MyProfilePageState extends State<MyProfilePage> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
 
           // PROFILE IMAGE
           Stack(
             alignment: Alignment.bottomRight,
             children: [
               CircleAvatar(
-                radius: 60,
+                radius: 65,
                 backgroundImage: imageFile != null
                     ? FileImage(imageFile!)
                     : NetworkImage(defaultImage) as ImageProvider,
               ),
+
               if (isEditing)
                 GestureDetector(
                   onTap: showImagePickerOptions,
@@ -220,12 +315,52 @@ class _MyProfilePageState extends State<MyProfilePage> {
             ],
           ),
 
-          const SizedBox(height: 25),
+          const SizedBox(height: 15),
+
+          Builder(
+            builder: (context) {
+              double completion = calculateCompletion();
+              int percentage = (completion * 100).toInt();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Profile Completion: $percentage%",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: completion,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      completion < 0.4
+                          ? Colors.red
+                          : completion < 0.8
+                          ? Colors.orange
+                          : Colors.green,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+
+          const SizedBox(height: 20),
 
           buildTextField('Name', nameController),
           buildTextField('Phone', phoneController),
-          buildTextField('Email', emailController),
-          buildTextField('Gender', genderController),
+          buildTextField(
+            'Email or Username',
+            emailController,
+            alwaysDisabled: true,
+          ),
+          buildGenderSection(),
           buildTextField('Age', ageController),
           buildTextField('Description', descriptionController, maxLines: 4),
 

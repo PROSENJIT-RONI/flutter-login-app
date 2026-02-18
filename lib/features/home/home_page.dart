@@ -24,11 +24,13 @@ class _MyHomePageState extends State<MyHomePage> {
   String userName = "";
   String? imagePath;
 
-  // 🔒 FIXED CONTACT DETAILS
   final String phoneNumber = "9552465892";
-  final String whatsappNumber = "919552465892"; // 91 + number
-  final String emailAddress = "aaa@gmail.com";
+  final String whatsappNumber = "919552465892";
+  final String emailAddress = "william.henry.moody@gmail.com";
   final String message = "Hello, I need support.";
+
+  final String playStoreUrl =
+      "https://play.google.com/store/apps/details?id=com.morningwalker.remoteapp";
 
   final List<String> _titles = ["Home", "Settings", "About", "Profile"];
 
@@ -73,7 +75,10 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  // ================= CONTACT FUNCTIONS =================
+  Future<void> openPlayStore() async {
+    final Uri url = Uri.parse(playStoreUrl);
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  }
 
   Future<void> openDialer() async {
     final Uri uri = Uri(scheme: 'tel', path: phoneNumber);
@@ -81,8 +86,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> openWhatsApp() async {
-    final Uri uri =
-    Uri.parse("https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(message)}");
+    final Uri uri = Uri.parse(
+      "https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(message)}",
+    );
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
@@ -147,47 +153,76 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         actions: _currentIndex == 0
             ? [
-          IconButton(
-            icon: const Icon(Icons.logout_outlined),
-            onPressed: showLogoutDialog,
-          ),
-        ]
+                IconButton(
+                  icon: const Icon(Icons.logout_outlined),
+                  onPressed: showLogoutDialog,
+                ),
+              ]
             : null,
       ),
 
-      // ================= BODY =================
       body: IndexedStack(
         index: _currentIndex,
         children: [
           Center(
-            child: Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(30),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.person,
-                        size: 60, color: Colors.purpleAccent),
-                    const SizedBox(height: 15),
-                    Text(
-                      "Welcome 👋 $userName",
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Card(
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(30),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.person,
+                          size: 60,
+                          color: Colors.purpleAccent,
+                        ),
+                        const SizedBox(height: 15),
+                        Text(
+                          "Welcome 👋 $userName",
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          "Have a great day!",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      "Have a great day!",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 25),
+                ElevatedButton.icon(
+                  onPressed: openPlayStore,
+                  label: const Text(
+                    "Open on Play Store",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  icon: const Icon(Icons.play_arrow, color: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const MySettingsPage(),
@@ -196,7 +231,6 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
 
-      // ================= DRAWER =================
       drawer: Drawer(
         child: Column(
           children: [
@@ -207,10 +241,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   DrawerHeader(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          Colors.purpleAccent,
-                          Colors.deepPurpleAccent
-                        ],
+                        colors: [Colors.purpleAccent, Colors.deepPurpleAccent],
                       ),
                     ),
                     child: Column(
@@ -220,15 +251,15 @@ class _MyHomePageState extends State<MyHomePage> {
                           radius: 40,
                           backgroundColor: Colors.white,
                           backgroundImage:
-                          (imagePath != null && imagePath!.isNotEmpty)
+                              (imagePath != null && imagePath!.isNotEmpty)
                               ? FileImage(File(imagePath!))
                               : null,
                           child: (imagePath == null || imagePath!.isEmpty)
                               ? const Icon(
-                            Icons.person,
-                            size: 40,
-                            color: Colors.purpleAccent,
-                          )
+                                  Icons.person,
+                                  size: 40,
+                                  color: Colors.purpleAccent,
+                                )
                               : null,
                         ),
                         const SizedBox(height: 10),
@@ -272,75 +303,128 @@ class _MyHomePageState extends State<MyHomePage> {
                 ],
               ),
             ),
+
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  border: const Border(
+                    top: BorderSide(color: Colors.grey),
+                  ),
+                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                      Icons.flutter_dash,
+                      size: 35,
+                      color: Colors.blue,),
+                  const SizedBox(height: 8),
+
+                  const Text(
+                    "Flutter Login App",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  const Text(
+                    "Version 1.0.0",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  const Text(
+                    "© 2026 Flutter Login App.",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  const Text(
+                    "Developed with 🫶 by Prosenjit",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            )
           ],
         ),
       ),
 
-      // ================= TOGGLE FAB =================
       floatingActionButton: _currentIndex == 0
           ? SizedBox(
-        width: 200,
-        height: 280,
-        child: Stack(
-          alignment: Alignment.bottomRight,
-          children: [
-            if (_isFabOpen)
-              Positioned(
-                bottom: 215,
-                right: 0,
-                child: _miniFab(
-                  icon: FontAwesomeIcons.whatsapp, // WhatsApp style
-                  color: Colors.green,
-                  onTap: openWhatsApp,
-                ),
+              width: 200,
+              height: 280,
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  if (_isFabOpen)
+                    Positioned(
+                      bottom: 215,
+                      right: 0,
+                      child: _miniFab(
+                        icon: FontAwesomeIcons.whatsapp, // WhatsApp style
+                        color: Colors.green,
+                        onTap: openWhatsApp,
+                      ),
+                    ),
+                  if (_isFabOpen)
+                    Positioned(
+                      bottom: 165,
+                      right: 0,
+                      child: _miniFab(
+                        icon: Icons.message,
+                        color: Colors.orange,
+                        onTap: openSMS,
+                      ),
+                    ),
+                  if (_isFabOpen)
+                    Positioned(
+                      bottom: 115,
+                      right: 0,
+                      child: _miniFab(
+                        icon: Icons.call,
+                        color: Colors.blue,
+                        onTap: openDialer,
+                      ),
+                    ),
+                  if (_isFabOpen)
+                    Positioned(
+                      bottom: 65,
+                      right: 0,
+                      child: _miniFab(
+                        icon: Icons.email_sharp,
+                        color: Colors.red,
+                        onTap: openEmail,
+                      ),
+                    ),
+                  FloatingActionButton(
+                    backgroundColor: Colors.purpleAccent,
+                    child: Icon(_isFabOpen ? Icons.close : Icons.support_agent),
+                    onPressed: () {
+                      setState(() {
+                        _isFabOpen = !_isFabOpen;
+                      });
+                    },
+                  ),
+                ],
               ),
-            if (_isFabOpen)
-              Positioned(
-                bottom: 165,
-                right: 0,
-                child: _miniFab(
-                  icon: Icons.message,
-                  color: Colors.orange,
-                  onTap: openSMS,
-                ),
-              ),
-            if (_isFabOpen)
-              Positioned(
-                bottom: 115,
-                right: 0,
-                child: _miniFab(
-                  icon: Icons.call,
-                  color: Colors.blue,
-                  onTap: openDialer,
-                ),
-              ),
-            if (_isFabOpen)
-              Positioned(
-                bottom: 65,
-                right: 0,
-                child: _miniFab(
-                  icon: Icons.email_sharp,
-                  color: Colors.red,
-                  onTap: openEmail,
-                ),
-              ),
-            FloatingActionButton(
-              backgroundColor: Colors.purpleAccent,
-              child: Icon(
-                _isFabOpen ? Icons.close : Icons.support_agent,
-              ),
-              onPressed: () {
-                setState(() {
-                  _isFabOpen = !_isFabOpen;
-                });
-              },
-            ),
-          ],
-        ),
-      )
+            )
           : null,
 
-      // ================= BOTTOM NAV =================
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: Colors.pinkAccent,
@@ -354,7 +438,9 @@ class _MyHomePageState extends State<MyHomePage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(
-              icon: Icon(Icons.settings), label: "Settings"),
+            icon: Icon(Icons.settings),
+            label: "Settings",
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.info), label: "About"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
@@ -362,3 +448,4 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
